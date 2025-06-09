@@ -17,5 +17,6 @@ func InitDB() {
 		panic("failed to connect database")
 	}
 	db.AutoMigrate(&models.Box{}, &models.File{}, &models.Tag{})
+	DB = db // 将数据库连接赋值给全局变量
 	fmt.Println()
 }

@@ -10,6 +10,17 @@ func CreateBox(box *models.Box) error {
 	return database.DB.Create(box).Error
 }
 
+func GetRootBoxes() ([]models.Box, error) {
+	var boxes []models.Box
+
+	// 查询所有 ParentID 为 nil 的 Box（即根节点）
+	if err := database.DB.Where("parent_id IS NULL").Find(&boxes).Error; err != nil {
+		return nil, err
+	}
+
+	return boxes, nil
+}
+
 // GetBoxByID 根据ID获取Box
 func GetBoxByID(id int) (*models.Box, error) {
 	var box models.Box
