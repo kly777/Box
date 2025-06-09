@@ -62,15 +62,3 @@ tidy:
 	@echo "Tidying module dependencies..."
 	go mod tidy -v
 
-# 显示帮助
-help:
-	@echo "Go项目标准构建工具"
-	@echo "可用命令:"
-	@echo "  make run        - 运行项目"
-	@echo "  make build      - 构建优化后的Windows可执行文件"
-	@echo "  make cross-build- 构建Linux可执行文件"
-	@echo "  make clean      - 清理构建产物"
-	@echo "  make version    - 显示当前版本"
-	@echo "  make lint       - 运行代码质量检查"
-	@echo "  make fmt        - 检查代码格式"
-	@echo "  make tidy       - 整理模块依赖"
