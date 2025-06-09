@@ -22,8 +22,15 @@ func SetupEventHandlers(components *UIComponents, state *UIState, window fyne.Wi
 				parentBox, err := state.BoxService.GetBoxByID(state.CurrentBoxID)
 				log.Printf("获取父级Box%v", parentBox)
 				if err == nil && parentBox.ParentID != nil {
-					state.CurrentBox = parentBox
-					state.CurrentBoxID = uint(*parentBox.ParentID)
+					// 类型转换并处理双返回值
+					state.CurrentBox, err = state.BoxService.GetBoxByID(uint(*(parentBox.ParentID)))
+					if err != nil {
+						log.Printf("获取父级Box失败: %v", err)
+						state.CurrentBox = nil
+						state.CurrentBoxID = 0
+					} else {
+						state.CurrentBoxID = uint(*(parentBox.ParentID))
+					}
 				} else {
 					state.CurrentBox = nil
 					state.CurrentBoxID = 0
@@ -47,7 +54,6 @@ func SetupEventHandlers(components *UIComponents, state *UIState, window fyne.Wi
 		components.BoxList.Refresh()
 		components.FileList.Refresh()
 	}
-
 	// 添加Box按钮点击事件
 	components.CreateBoxBtn.OnTapped = func() {
 		nameEntry := widget.NewEntry()

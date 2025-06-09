@@ -8,9 +8,9 @@ import (
 )
 
 type UIComponents struct {
-	BoxList      *widget.List
-	FileList     *widget.List
-	CreateBoxBtn *widget.Button
+	BoxList             *widget.List
+	FileList            *widget.List
+	CreateBoxBtn        *widget.Button
 	CurrentBoxNameLabel *widget.Label
 }
 
@@ -18,7 +18,11 @@ func NewUIComponents(window fyne.Window, state *UIState) *UIComponents {
 	// Box列表组件
 	boxList := widget.NewList(
 		func() int { return len(state.CurrentBoxes) },
-		func() fyne.CanvasObject { return widget.NewLabel("") },
+		func() fyne.CanvasObject {
+			lbl := widget.NewLabel("")
+			lbl.TextStyle = fyne.TextStyle{Bold: true} // 加粗显示
+			return lbl
+		},
 		func(id widget.ListItemID, obj fyne.CanvasObject) {
 			obj.(*widget.Label).SetText(state.CurrentBoxes[id].Name)
 		},
@@ -39,20 +43,34 @@ func NewUIComponents(window fyne.Window, state *UIState) *UIComponents {
 	currentBoxNameLabel := widget.NewLabel("Box")
 
 	return &UIComponents{
-		BoxList:      boxList,
-		FileList:     fileList,
-		CreateBoxBtn: createBoxBtn,
+		BoxList:             boxList,
+		FileList:            fileList,
+		CreateBoxBtn:        createBoxBtn,
 		CurrentBoxNameLabel: currentBoxNameLabel,
 	}
 }
 
 func (c *UIComponents) BuildLayout() fyne.CanvasObject {
-	return container.NewBorder(
-		container.NewHBox(c.CreateBoxBtn,c.CurrentBoxNameLabel), // 顶部按钮
-		nil, nil, nil,
-		container.NewHSplit(
-			c.BoxList,  // 左侧Box列表
-			c.FileList, // 右侧文件列表
-		),
+	// 创建HSplit并保存引用
+	hsplit := container.NewHSplit(
+		container.NewScroll(c.BoxList),
+		container.NewScroll(c.FileList),
 	)
+
+	// 创建顶部带分割线的布局
+	topContent := container.NewVBox(
+		container.NewHBox(
+			c.CreateBoxBtn,
+			c.CurrentBoxNameLabel,
+		),
+		widget.NewSeparator(), // 添加水平分割线
+	)
+
+	// 使用HSplit构建border布局
+	border := container.NewBorder(
+		container.NewPadded(topContent),
+		nil, nil, nil,
+		hsplit, // 使用预先配置好的HSplit
+	)
+	return border
 }
