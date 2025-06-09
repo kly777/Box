@@ -17,46 +17,59 @@ func SyncDirectory(rootPath string) error {
 		return err
 	}
 
-	// 递归遍历目录
-	return filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
+	// 使用队列实现广度优先遍历
+	queue := []string{rootPath}
+	for len(queue) > 0 {
+		currentPath := queue[0]
+		queue = queue[1:]
+
+		// 读取当前目录内容
+		entries, err := os.ReadDir(currentPath)
 		if err != nil {
-			log.Printf("遍历路径失败: %s, 错误: %v", path, err)
-			return err
+			log.Printf("读取目录失败: %s, 错误: %v", currentPath, err)
+			continue
 		}
 
-		// 跳过根目录自身
-		if path == rootPath {
-			return nil
-		}
+		// 先处理目录
+		for _, entry := range entries {
+			path := filepath.Join(currentPath, entry.Name())
 
-		// 处理目录
-		if info.IsDir() {
-			parentPath := filepath.Dir(path)
-			parentBox, err := getOrCreateBox(parentPath)
-			if err != nil {
-				log.Printf("获取父Box失败: %s, 错误: %v", parentPath, err)
-				return err
+			if entry.IsDir() {
+				// 处理目录
+				parentPath := filepath.Dir(path)
+				parentBox, err := getOrCreateBox(parentPath)
+				if err != nil {
+					log.Printf("获取父Box失败: %s, 错误: %v", parentPath, err)
+					continue
+				}
+				if _, err = ensureBox(path, parentBox); err != nil {
+					log.Printf("创建Box失败: %s", path)
+					continue
+				}
+				queue = append(queue, path) // 将子目录加入队列
 			}
-			_, err = ensureBox(path, parentBox)
-			if err != nil {
-				log.Printf("创建Box失败: %s", path)
-			}
-			return err
 		}
 
-		// 处理文件
-		parentPath := filepath.Dir(path)
-		parentBox, err := getOrCreateBox(parentPath)
-		if err != nil {
-			log.Printf("获取文件父Box失败: %s, 错误: %v", parentPath, err)
-			return err
+		// 再处理文件
+		for _, entry := range entries {
+			path := filepath.Join(currentPath, entry.Name())
+
+			if !entry.IsDir() {
+				// 处理文件
+				parentPath := filepath.Dir(path)
+				parentBox, err := getOrCreateBox(parentPath)
+				if err != nil {
+					log.Printf("获取文件父Box失败: %s, 错误: %v", parentPath, err)
+					continue
+				}
+				if err := createFile(path, parentBox); err == nil {
+					log.Printf("成功创建文件记录: %s", path)
+				}
+			}
 		}
-		err = createFile(path, parentBox)
-		if err == nil {
-			log.Printf("成功创建文件记录: %s", path)
-		}
-		return err
-	})
+	}
+
+	return nil
 }
 
 // ensureBox 确保目录对应的Box存在

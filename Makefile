@@ -12,11 +12,16 @@ run:
 # 默认构建目标
 build:
 	@echo "Building Go binary (version: ${VERSION}) with optimization flags..."
-	go build -ldflags="-s -w" -o Box.exe cmd/app/main.go
+	go build -ldflags="-s -w -H windowsgui" -o Box.exe cmd/app/main.go
 	# @echo "Compressing executable with UPX..."
 	# upx -6 --fast --lzma Box.exe
 	# @echo "Build complete! Final size:"
 	@du -h Box.exe
+
+buildDBG:
+	@echo "Building Go binary (version: ${VERSION}) with debug flags..."
+	go build -ldflags="-s -w -X main.version=${VERSION}" -o BoxDBG.exe cmd/app/main.go
+	@du -h BoxDBG.exe
 
 # 清理构建产物
 clean:
