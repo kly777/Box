@@ -22,15 +22,26 @@ func SetupEventHandlers(components *UIComponents, state *UIState, window fyne.Wi
 				parentBox, err := state.BoxService.GetBoxByID(state.CurrentBoxID)
 				log.Printf("获取父级Box%v", parentBox)
 				if err == nil && parentBox.ParentID != nil {
+					state.CurrentBox = parentBox
 					state.CurrentBoxID = uint(*parentBox.ParentID)
 				} else {
+					state.CurrentBox = nil
 					state.CurrentBoxID = 0
 				}
 			}
 		} else {
+			state.CurrentBox = &box
 			state.CurrentBoxID = uint(box.ID)
 		}
+		log.Printf("[state]当前Box%v", state.CurrentBox)
+		if state.CurrentBox != nil {
+			components.CurrentBoxNameLabel.SetText(state.CurrentBox.Name)
+		} else {
+			components.CurrentBoxNameLabel.SetText("Box")
+		}
+
 		components.BoxList.Unselect(id)
+		components.FileList.UnselectAll()
 
 		state.RefreshAll()
 		components.BoxList.Refresh()

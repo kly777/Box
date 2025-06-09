@@ -1,6 +1,9 @@
 package repos
 
 import (
+	"context"
+	"fmt"
+
 	"box/internal/storage/database"
 	"box/internal/storage/models"
 	"errors"
@@ -83,8 +86,22 @@ func GetFileByPath(path string) (*models.File, error) {
 // 根据Box ID获取文件列表
 func GetFilesByBoxID(boxID uint) ([]models.File, error) {
 	var files []models.File
-	err := database.DB.Joins("JOIN box_files ON box_files.file_id = files.id").
-		Where("box_files.box_id = ?", boxID).
+	log.Printf("查询BoxID %d 的文件", boxID)
+
+	// 使用WithContext支持上下文传递
+	err := database.DB.WithContext(context.Background()).
+		Joins("JOIN file_boxes ON file_boxes.file_id = files.id").
+		Where("file_boxes.box_id = ?", boxID).
 		Find(&files).Error
-	return files, err
+
+	if err != nil {
+		log.Printf("查询文件失败: %v", err)
+		return nil, fmt.Errorf("查询BoxID %d 文件失败: %w", boxID, err)
+	}
+
+	// 返回空切片而非nil以避免nil引用
+	if files == nil {
+		return []models.File{}, nil
+	}
+	return files, nil
 }

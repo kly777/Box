@@ -11,6 +11,7 @@ type UIState struct {
 	BoxService   service.BoxService
 	Window       fyne.Window
 	CurrentBoxID uint
+	CurrentBox   *models.Box
 	CurrentBoxes []models.Box
 	currentFiles []models.File
 }

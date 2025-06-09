@@ -3,6 +3,7 @@ package gui
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -10,6 +11,7 @@ type UIComponents struct {
 	BoxList      *widget.List
 	FileList     *widget.List
 	CreateBoxBtn *widget.Button
+	CurrentBoxNameLabel *widget.Label
 }
 
 func NewUIComponents(window fyne.Window, state *UIState) *UIComponents {
@@ -34,16 +36,19 @@ func NewUIComponents(window fyne.Window, state *UIState) *UIComponents {
 	// 添加Box按钮
 	createBoxBtn := widget.NewButton("添加Box", nil)
 
+	currentBoxNameLabel := widget.NewLabel("Box")
+
 	return &UIComponents{
 		BoxList:      boxList,
 		FileList:     fileList,
 		CreateBoxBtn: createBoxBtn,
+		CurrentBoxNameLabel: currentBoxNameLabel,
 	}
 }
 
 func (c *UIComponents) BuildLayout() fyne.CanvasObject {
 	return container.NewBorder(
-		container.NewHBox(c.CreateBoxBtn), // 顶部按钮
+		container.NewHBox(c.CreateBoxBtn,c.CurrentBoxNameLabel), // 顶部按钮
 		nil, nil, nil,
 		container.NewHSplit(
 			c.BoxList,  // 左侧Box列表
