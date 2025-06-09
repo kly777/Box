@@ -1,11 +1,11 @@
-package crud
+package repos
 
 import (
 	"box/internal/storage/database"
 	"box/internal/storage/models"
 )
 
-// CreateBox 创建Box记录
+// 根据父ID获取Box列表
 func CreateBox(box *models.Box) error {
 	return database.DB.Create(box).Error
 }
@@ -26,6 +26,17 @@ func GetBoxByID(id int) (*models.Box, error) {
 	var box models.Box
 	err := database.DB.Preload("Children").Preload("Files").First(&box, id).Error
 	return &box, err
+}
+
+// 根据父ID获取Box列表
+func GetBoxesByParentID(parentID uint) ([]models.Box, error) {
+	var boxes []models.Box
+	query := database.DB.Where("parent_id = ?", parentID)
+	if parentID == 0 {
+		query = database.DB.Where("parent_id IS NULL")
+	}
+	err := query.Find(&boxes).Error
+	return boxes, err
 }
 
 // UpdateBox 更新Box信息

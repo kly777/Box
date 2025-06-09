@@ -1,4 +1,4 @@
-package crud
+package repos
 
 import (
 	"box/internal/storage/database"

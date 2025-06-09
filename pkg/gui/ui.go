@@ -2,86 +2,32 @@ package gui
 
 import (
 	"box/internal/core/service"
+
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/widget"
+	"fyne.io/fyne/v2/app"
 )
 
-func CreateMainUI(window fyne.Window, boxService service.BoxService) fyne.CanvasObject {
-	// 加载真实数据
-	boxes, err := boxService.GetRootBoxes()
-	if err != nil {
-		// 错误处理
-		errorLabel := widget.NewLabel("加载数据失败: " + err.Error())
-		return container.NewCenter(errorLabel)
-	}
+// 存储当前显示的Boxes
 
-	// 先定义Box列表组件
-	boxList := widget.NewList(
-		func() int { return len(boxes) },
-		func() fyne.CanvasObject {
-			return widget.NewLabel("Box")
-		},
-		func(id widget.ListItemID, obj fyne.CanvasObject) {
-			obj.(*widget.Label).SetText(boxes[id].Name)
-		},
-	)
+func StartGUI(boxService service.BoxService) {
+	app := app.New()
+	window := app.NewWindow("Box Management")
 
-	// 刷新Box列表的函数
-	refreshBoxes := func() {
-		newBoxes, err := boxService.GetRootBoxes()
-		if err != nil {
-			dialog.ShowError(err, window)
-		} else {
-			boxes = newBoxes
-			boxList.Refresh()
-		}
-	}
+	// 初始化状态管理
+	state := NewUIState(boxService, window)
 
-	// 添加Box按钮
-	createBoxBtn := widget.NewButton("添加Box", func() {
-		inputDialog := dialog.NewEntryDialog("新建Box", "输入Box名称：", func(name string) {
-			if name != "" {
-				_, err := boxService.CreateBox(name)
-				if err != nil {
-					dialog.ShowError(err, window)
-				} else {
-					refreshBoxes()
-				}
-			}
-		}, window)
-		inputDialog.Show()
-	})
+	// 初始化界面组件
+	components := NewUIComponents(window, state)
 
-	// 文件列表（暂时空实现）
-	fileList := widget.NewList(
-		func() int { return 0 },
-		func() fyne.CanvasObject {
-			return widget.NewLabel("File")
-		},
-		func(id widget.ListItemID, obj fyne.CanvasObject) {},
-	)
+	// 设置事件处理
+	SetupEventHandlers(components, state, window)
 
-	// 添加文件按钮
-	addFileBtn := widget.NewButton("添加文件", func() {
-		// TODO: 实现添加文件逻辑
-	})
+	// 设置布局
+	window.SetContent(components.BuildLayout())
 
-	// Box区域布局（包含创建按钮和列表）
-	boxSection := container.NewBorder(
-		createBoxBtn, // 顶部放置创建按钮
-		nil,
-		nil,
-		nil,
-		boxList,
-	)
+	// 初始加载
+	state.RefreshAll()
 
-	// 主布局
-	content := container.NewHSplit(
-		boxSection,
-		container.NewBorder(nil, addFileBtn, nil, nil, fileList),
-	)
-
-	return content
+	window.Resize(fyne.NewSize(800, 600))
+	window.ShowAndRun()
 }

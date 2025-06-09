@@ -2,7 +2,6 @@ package database
 
 import (
 	"box/internal/storage/models"
-	"fmt"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -11,12 +10,16 @@ import (
 var DB *gorm.DB
 
 func InitDB() {
-	fmt.Println("InitDB")
-	db, err := gorm.Open(sqlite.Open(".db"), &gorm.Config{})
+
+	db, err := gorm.Open(sqlite.Open(".db"), &gorm.Config{
+		// Logger: logger.Default.LogMode(logger.Info),
+	})
 	if err != nil {
 		panic("failed to connect database")
 	}
-	db.AutoMigrate(&models.Box{}, &models.File{}, &models.Tag{})
+	if err := db.AutoMigrate(&models.Box{}, &models.File{}, &models.Tag{}); err != nil {
+		panic("数据库迁移失败: " + err.Error())
+	}
 	DB = db // 将数据库连接赋值给全局变量
-	fmt.Println()
+
 }

@@ -1,22 +1,26 @@
 package sync
 
 import (
-	"box/internal/storage/repos"
 	"box/internal/storage/models"
+	repos "box/internal/storage/repos"
+	"log"
 	"os"
 	"path/filepath"
 )
 
 // SyncDirectory 同步指定目录下的所有文件和目录到数据库
 func SyncDirectory(rootPath string) error {
+	log.Printf("开始同步目录: %s", rootPath)
 	// 确保根目录Box存在
 	if _, err := ensureBox(rootPath, nil); err != nil {
+		log.Printf("初始化根目录Box失败: %v", err)
 		return err
 	}
 
 	// 递归遍历目录
 	return filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
+			log.Printf("遍历路径失败: %s, 错误: %v", path, err)
 			return err
 		}
 
@@ -30,9 +34,13 @@ func SyncDirectory(rootPath string) error {
 			parentPath := filepath.Dir(path)
 			parentBox, err := getOrCreateBox(parentPath)
 			if err != nil {
+				log.Printf("获取父Box失败: %s, 错误: %v", parentPath, err)
 				return err
 			}
 			_, err = ensureBox(path, parentBox)
+			if err != nil {
+				log.Printf("创建Box失败: %s", path)
+			}
 			return err
 		}
 
@@ -40,15 +48,20 @@ func SyncDirectory(rootPath string) error {
 		parentPath := filepath.Dir(path)
 		parentBox, err := getOrCreateBox(parentPath)
 		if err != nil {
+			log.Printf("获取文件父Box失败: %s, 错误: %v", parentPath, err)
 			return err
 		}
-		return createFile(path, parentBox)
+		err = createFile(path, parentBox)
+		if err == nil {
+			log.Printf("成功创建文件记录: %s", path)
+		}
+		return err
 	})
 }
 
 // ensureBox 确保目录对应的Box存在
 func ensureBox(dirPath string, parentBox *models.Box) (*models.Box, error) {
-	box, err := crud.GetBoxByName(filepath.Base(dirPath))
+	box, err := repos.GetBoxByName(filepath.Base(dirPath))
 	if err == nil {
 		return box, nil
 	}
@@ -61,7 +74,7 @@ func ensureBox(dirPath string, parentBox *models.Box) (*models.Box, error) {
 		newBox.ParentID = &parentBox.ID
 	}
 
-	if err := crud.CreateBox(newBox); err != nil {
+	if err := repos.CreateBox(newBox); err != nil {
 		return nil, err
 	}
 	return newBox, nil
@@ -69,7 +82,7 @@ func ensureBox(dirPath string, parentBox *models.Box) (*models.Box, error) {
 
 // getOrCreateBox 获取或创建目录对应的Box
 func getOrCreateBox(dirPath string) (*models.Box, error) {
-	box, err := crud.GetBoxByName(filepath.Base(dirPath))
+	box, err := repos.GetBoxByName(filepath.Base(dirPath))
 	if err == nil {
 		return box, nil
 	}
@@ -79,7 +92,7 @@ func getOrCreateBox(dirPath string) (*models.Box, error) {
 // createFile 创建文件记录并关联到Box
 func createFile(filePath string, parentBox *models.Box) error {
 	// 检查文件是否已存在
-	_, err := crud.GetFileByPath(filePath)
+	_, err := repos.GetFileByPath(filePath)
 	if err == nil {
 		return nil // 文件已存在
 	}
@@ -89,10 +102,10 @@ func createFile(filePath string, parentBox *models.Box) error {
 		Name: filepath.Base(filePath),
 		Path: filePath,
 	}
-	if err := crud.CreateFile(file); err != nil {
+	if err := repos.CreateFile(file); err != nil {
 		return err
 	}
 
 	// 关联到父Box
-	return crud.AddBoxFile(parentBox.ID, int(file.ID))
+	return repos.AddBoxFile(parentBox.ID, int(file.ID))
 }
