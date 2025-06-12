@@ -4,7 +4,9 @@ import (
 	"box/internal/storage/database"
 	"box/internal/storage/models"
 	"errors"
+	"fmt"
 	"log"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -70,14 +72,30 @@ func SetFileBoxes(fileID int, boxIDs []int) error {
 
 // GetFileByPath 根据路径获取文件
 func GetFileByPath(path string) (*models.File, error) {
-	var file models.File
-	log.Printf("[FileRepo] 按路径查询文件: %s", path)
-	err := database.DB.Where("path = ?", path).First(&file).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		log.Printf("[FileRepo] 文件不存在: %s", path)
-		return nil, nil
-	}
-	return &file, err
+    // 输入校验：检查路径是否为空或包含非法字符
+    if path == "" {
+        log.Printf("[FileRepo] 路径为空")
+        return nil, fmt.Errorf("invalid path: empty")
+    }
+    if strings.Contains(path, "..") {
+        log.Printf("[FileRepo] 路径包含非法字符: %s", path)
+        return nil, fmt.Errorf("invalid path: contains '..'")
+    }
+
+    var file models.File
+    log.Printf("[FileRepo] 按路径查询文件: %s", path) // 若需脱敏，可替换为哈希值或截断
+    err := database.DB.Where("path = ?", path).First(&file).Error
+
+    if errors.Is(err, gorm.ErrRecordNotFound) {
+        log.Printf("[FileRepo] 文件不存在: %s", path)
+        return nil, fmt.Errorf("file not found") // 包装错误，隐藏gorm内部类型
+    }
+    if err != nil {
+        log.Printf("[FileRepo] 查询文件失败: %v", err)
+        return nil, fmt.Errorf("database error: %w", err) // 统一错误包装
+    }
+
+    return &file, nil
 }
 
 // 根据Box ID获取文件列表

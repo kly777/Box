@@ -2,13 +2,13 @@ package sync
 
 import (
 	"box/internal/storage/models"
-	repos "box/internal/storage/repos"
+	"box/internal/storage/repos"
+	"container/list"
 	"log"
 	"os"
 	"path/filepath"
 )
 
-// SyncDirectory 同步指定目录下的所有文件和目录到数据库
 func SyncDirectory(rootPath string) error {
 	log.Printf("开始同步目录: %s", rootPath)
 	// 确保根目录Box存在
@@ -17,16 +17,25 @@ func SyncDirectory(rootPath string) error {
 		return err
 	}
 
-	// 使用队列实现广度优先遍历
-	queue := []string{rootPath}
-	for len(queue) > 0 {
-		currentPath := queue[0]
-		queue = queue[1:]
+	// 使用链表实现广度优先遍历
+	queue := list.New()
+	queue.PushBack(rootPath)
+	for queue.Len() > 0 {
+		element := queue.Front()
+		currentPath := element.Value.(string)
+		queue.Remove(element)
 
 		// 读取当前目录内容
 		entries, err := os.ReadDir(currentPath)
 		if err != nil {
 			log.Printf("读取目录失败: %s, 错误: %v", currentPath, err)
+			continue
+		}
+
+		// 获取当前目录的Box
+		parentBox, err := getOrCreateBox(currentPath)
+		if err != nil {
+			log.Printf("获取父Box失败: %s, 错误: %v", currentPath, err)
 			continue
 		}
 
@@ -36,34 +45,19 @@ func SyncDirectory(rootPath string) error {
 
 			if entry.IsDir() {
 				// 处理目录
-				parentPath := filepath.Dir(path)
-				parentBox, err := getOrCreateBox(parentPath)
-				if err != nil {
-					log.Printf("获取父Box失败: %s, 错误: %v", parentPath, err)
-					continue
-				}
 				if _, err = ensureBox(path, parentBox); err != nil {
-					log.Printf("创建Box失败: %s", path)
+					log.Printf("创建Box失败: %s, 错误: %v", path, err)
 					continue
 				}
-				queue = append(queue, path) // 将子目录加入队列
+				queue.PushBack(path) // 将子目录加入队列
 			}
-		}
-
-		// 再处理文件
-		for _, entry := range entries {
-			path := filepath.Join(currentPath, entry.Name())
 
 			if !entry.IsDir() {
 				// 处理文件
-				parentPath := filepath.Dir(path)
-				parentBox, err := getOrCreateBox(parentPath)
-				if err != nil {
-					log.Printf("获取文件父Box失败: %s, 错误: %v", parentPath, err)
-					continue
-				}
-				if err := createFile(path, parentBox); err == nil {
-					log.Printf("成功创建文件记录: %s", path)
+				if err := createFile(path, parentBox); err != nil {
+					log.Printf("创建文件失败: %s, 错误: %v", path, err)
+				} else {
+					log.Printf("成功创建文件: %s", path)
 				}
 			}
 		}
@@ -71,7 +65,6 @@ func SyncDirectory(rootPath string) error {
 
 	return nil
 }
-
 // ensureBox 确保目录对应的Box存在
 func ensureBox(dirPath string, parentBox *models.Box) (*models.Box, error) {
 	box, err := repos.GetBoxByName(filepath.Base(dirPath))

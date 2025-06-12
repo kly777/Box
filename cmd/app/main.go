@@ -19,9 +19,11 @@ func main() {
 	}
 
 	// 扫描文件系统并同步到数据库
-	if err := sync.SyncDirectory(rootPath); err != nil {
-		log.Printf("文件系统同步失败: %v", err)
-	}
+	go func() {
+		if err := sync.SyncDirectory(rootPath); err != nil {
+			log.Printf("文件系统同步失败: %v", err)
+		}
+	}()
 
 	// 创建服务实例
 	boxService := &service.LocalBoxService{}

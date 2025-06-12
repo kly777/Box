@@ -26,7 +26,7 @@ buildDBG:
 # 清理构建产物
 clean:
 	@echo "Cleaning build artifacts..."
-	rm -f Box.exe Box-linux
+	rm -f Box.exe Box-linux .db
 	@echo "Clean complete"
 
 # 显示版本信息
