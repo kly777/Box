@@ -65,6 +65,7 @@ func SyncDirectory(rootPath string) error {
 
 	return nil
 }
+
 // ensureBox 确保目录对应的Box存在
 func ensureBox(dirPath string, parentBox *models.Box) (*models.Box, error) {
 	box, err := repos.GetBoxByName(filepath.Base(dirPath))
