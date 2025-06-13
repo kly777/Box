@@ -37,3 +37,13 @@ func SetTagColor(id int, color string) error {
 func ClearTagColor(id int) error {
 	return database.DB.Model(&models.Tag{}).Where("id = ?", id).Update("color", sql.NullString{Valid: false}).Error
 }
+
+func AddFileTag(fileID uint, tagID uint) error {
+	return database.DB.Model(&models.File{ID: int(fileID)}).Association("Tags").Append(&models.Tag{ID: int(tagID)})
+}
+
+func GetFileTags(fileID uint) ([]models.Tag, error) {
+	var tags []models.Tag
+	err := database.DB.Model(&models.File{ID: int(fileID)}).Association("Tags").Find(&tags)
+	return tags, err
+}

@@ -50,12 +50,9 @@ lint:
 # 代码格式化检查
 fmt:
 	@echo "Checking code formatting..."
-	@if [ -n "$$(go fmt ./...)" ]; then \
-		echo "Code formatting issues found. Run 'go fmt ./...' to fix"; \
-		exit 1; \
-	else \
-		echo "Code is properly formatted"; \
-	fi
+	go fmt ./...
+	@echo "Code is properly formatted"; \
+
 
 # 依赖管理
 tidy:

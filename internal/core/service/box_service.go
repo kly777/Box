@@ -12,6 +12,10 @@ type BoxService interface {
 	GetChildBoxes(parentID uint) ([]models.Box, error)
 	GetFilesInBox(boxID uint) ([]models.File, error)
 	CreateBox(name string) (*models.Box, error)
+	// 标签管理接口
+	CreateTag(name string) (*models.Tag, error)
+	AddTagToFile(fileID uint, tagName string) error
+	GetFileTags(fileID uint) ([]models.Tag, error)
 }
 
 type LocalBoxService struct{}
@@ -58,6 +62,32 @@ func (s *LocalBoxService) GetFilesInBox(boxID uint) ([]models.File, error) {
 		log.Printf("[BoxService] 获取到 %d 个文件", len(files))
 	}
 	return files, err
+}
+
+func (s *LocalBoxService) CreateTag(name string) (*models.Tag, error) {
+	log.Printf("[BoxService] 创建新标签: %s", name)
+	tag := &models.Tag{Name: name}
+	err := repos.CreateTag(tag)
+	if err != nil {
+		log.Printf("[BoxService] 创建标签失败: %s, 错误: %v", name, err)
+	} else {
+		log.Printf("[BoxService] 成功创建标签(ID:%d)", tag.ID)
+	}
+	return tag, err
+}
+
+func (s *LocalBoxService) AddTagToFile(fileID uint, tagName string) error {
+	tag, err := s.CreateTag(tagName)
+	if err != nil {
+		return err
+	}
+	log.Printf("[BoxService] 添加标签到文件(FileID:%d, TagID:%d)", fileID, tag.ID)
+	return repos.AddFileTag(fileID, uint(tag.ID))
+}
+
+func (s *LocalBoxService) GetFileTags(fileID uint) ([]models.Tag, error) {
+	log.Printf("[BoxService] 获取文件标签(FileID:%d)", fileID)
+	return repos.GetFileTags(fileID)
 }
 
 func (s *LocalBoxService) CreateBox(name string) (*models.Box, error) {
